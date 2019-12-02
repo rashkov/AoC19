@@ -1,6 +1,5 @@
 'use strict';
 
-var List = require("bs-platform/lib/js/list.js");
 var React = require("react");
 var Belt_List = require("bs-platform/lib/js/belt_List.js");
 var Input1$ReasonReactExamples = require("./input1.bs.js");
@@ -15,7 +14,7 @@ function sum_list(lst) {
               }));
 }
 
-var fuel_required = sum_list(List.map(calc_fuel_for_mass, Input1$ReasonReactExamples.input1));
+var fuel_required = sum_list(Belt_List.map(Input1$ReasonReactExamples.input1, calc_fuel_for_mass));
 
 function calc_additional_fuel_series(_series) {
   while(true) {
@@ -37,12 +36,12 @@ function calc_additional_fuel_series(_series) {
   };
 }
 
-var additional_fuel = sum_list(calc_additional_fuel_series(/* :: */[
-          calc_fuel_for_mass(fuel_required),
-          /* [] */0
-        ]));
-
-var total_fuel = fuel_required + additional_fuel | 0;
+var total_fuel = sum_list(Belt_List.map(Belt_List.map(Belt_List.map(Input1$ReasonReactExamples.input1, calc_fuel_for_mass), (function (fuel_for_mass) {
+                return calc_additional_fuel_series(/* :: */[
+                            fuel_for_mass,
+                            /* [] */0
+                          ]);
+              })), sum_list));
 
 function Day1(Props) {
   var fuel_required_str = String(fuel_required);
@@ -59,7 +58,6 @@ exports.calc_fuel_for_mass = calc_fuel_for_mass;
 exports.sum_list = sum_list;
 exports.fuel_required = fuel_required;
 exports.calc_additional_fuel_series = calc_additional_fuel_series;
-exports.additional_fuel = additional_fuel;
 exports.total_fuel = total_fuel;
 exports.make = make;
 /* fuel_required Not a pure module */
