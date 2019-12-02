@@ -54,3 +54,8 @@ ReactDOMRe.render(
   <Day1 />,
   makeContainer("AoC Day 1"),
 );
+
+ReactDOMRe.render(
+  <Day2 />,
+  makeContainer("AoC Day 2"),
+);

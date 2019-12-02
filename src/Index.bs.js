@@ -3,6 +3,7 @@
 var React = require("react");
 var ReactDom = require("react-dom");
 var Day1$ReasonReactExamples = require("./day1/Day1.bs.js");
+var Day2$ReasonReactExamples = require("./day2/Day2.bs.js");
 var ExampleStyles$ReasonReactExamples = require("./ExampleStyles.bs.js");
 
 var style = document.createElement("style");
@@ -26,6 +27,8 @@ function makeContainer(text) {
 }
 
 ReactDom.render(React.createElement(Day1$ReasonReactExamples.make, { }), makeContainer("AoC Day 1"));
+
+ReactDom.render(React.createElement(Day2$ReasonReactExamples.make, { }), makeContainer("AoC Day 2"));
 
 exports.style = style;
 exports.makeContainer = makeContainer;
