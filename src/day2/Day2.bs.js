@@ -10,6 +10,8 @@ var Input2$ReasonReactExamples = require("./Input2.bs.js");
 
 var UnknownInstruction = Caml_exceptions.create("Day2-ReasonReactExamples.UnknownInstruction");
 
+var ExhaustedNounVerbSearchSpace = Caml_exceptions.create("Day2-ReasonReactExamples.ExhaustedNounVerbSearchSpace");
+
 function compute(_ip, program) {
   while(true) {
     var ip = _ip;
@@ -135,18 +137,36 @@ function tests(param) {
 
 tests(/* () */0);
 
-var program_array = Belt_List.toArray(Input2$ReasonReactExamples.input);
+function runWithNounVerb(noun, verb) {
+  var program_array = Belt_List.toArray(Input2$ReasonReactExamples.input);
+  Caml_array.caml_array_set(program_array, 1, noun);
+  Caml_array.caml_array_set(program_array, 2, verb);
+  compute(0, program_array);
+  return Caml_array.caml_array_get(program_array, 0);
+}
 
-Caml_array.caml_array_set(program_array, 1, 12);
+var part_1 = runWithNounVerb(12, 2);
 
-Caml_array.caml_array_set(program_array, 2, 2);
+var noun = /* record */[/* contents */0];
 
-compute(0, program_array);
+var verb = /* record */[/* contents */0];
 
-var part_1 = Caml_array.caml_array_get(program_array, 0);
+while(runWithNounVerb(noun[0], verb[0]) !== 19690720) {
+  if (noun[0] > 99) {
+    throw ExhaustedNounVerbSearchSpace;
+  }
+  if (verb[0] !== 99) {
+    verb[0] = verb[0] + 1 | 0;
+  } else {
+    noun[0] = noun[0] + 1 | 0;
+    verb[0] = 0;
+  }
+};
+
+var part_2 = Caml_int32.imul(noun[0], 100) + verb[0] | 0;
 
 function Day2(Props) {
-  return React.createElement("div", undefined, "Part 1 " + (String(part_1) + ""));
+  return React.createElement("div", undefined, React.createElement("div", undefined, "Part 1 " + (String(part_1) + "")), React.createElement("div", undefined, "Part 2 " + (String(part_2) + (" (noun: " + (String(noun) + (" verb: " + (String(verb) + ")")))))));
 }
 
 var program = Input2$ReasonReactExamples.input;
@@ -155,9 +175,13 @@ var make = Day2;
 
 exports.program = program;
 exports.UnknownInstruction = UnknownInstruction;
+exports.ExhaustedNounVerbSearchSpace = ExhaustedNounVerbSearchSpace;
 exports.compute = compute;
 exports.tests = tests;
-exports.program_array = program_array;
+exports.runWithNounVerb = runWithNounVerb;
 exports.part_1 = part_1;
+exports.noun = noun;
+exports.verb = verb;
+exports.part_2 = part_2;
 exports.make = make;
 /*  Not a pure module */

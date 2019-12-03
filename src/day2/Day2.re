@@ -1,6 +1,7 @@
 let program = Input2.input;
 
 exception UnknownInstruction;
+exception ExhaustedNounVerbSearchSpace;
 /*
    Program:
    A program is a zero-indexed array of integers, including three opcodes listed below. Step through the program, executing opcodes until reaching opcode 99 (halt).
@@ -79,14 +80,37 @@ let tests = () => {
 };
 tests();
 
+let runWithNounVerb = (noun: int, verb: int) => {
+  let program_array = Belt.List.toArray(program);
+  program_array[1] = noun;
+  program_array[2] = verb;
+  compute(0, program_array);
+  program_array[0];
+};
+
 /* Calculate part 1 */
-let program_array = Belt.List.toArray(program);
-program_array[1] = 12;
-program_array[2] = 2;
-compute(0, program_array);
-let part_1 = program_array[0];
+let part_1 = runWithNounVerb(12, 2);
+
+let noun = ref(0);
+let verb = ref(0);
+while(runWithNounVerb(noun^, verb^) != 19690720){
+  if(noun^ > 99){
+    raise(ExhaustedNounVerbSearchSpace);
+  }
+  if(verb^ != 99){
+    verb := verb^ + 1;
+  }
+  else{
+    noun := noun^ + 1;
+    verb := 0;
+  }
+};
+let part_2 = (noun^)*100 + verb^;
 
 [@react.component]
 let make = () => {
-  <div> {j|Part 1 $(part_1)|j}->ReasonReact.string </div>;
+  <div>
+    <div> {j|Part 1 $(part_1)|j}->ReasonReact.string </div>
+    <div> {j|Part 2 $(part_2) (noun: $(noun) verb: $(verb))|j}->ReasonReact.string </div>
+  </div>
 };
