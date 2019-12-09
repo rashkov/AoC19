@@ -232,14 +232,6 @@ var match = Belt_List.reduce(all_tagged_coords, /* tuple */[
 
 var collisions = match[1];
 
-Belt_List.forEach(collisions, (function (coord) {
-        console.log("collision at: ", /* tuple */[
-              coord[/* x */0],
-              coord[/* y */1]
-            ]);
-        return /* () */0;
-      }));
-
 var closest_collision = Belt_List.head(Belt_List.sort(Belt_List.map(collisions, (function (collision_coord) {
                 return collision_coord[/* x */0] + collision_coord[/* y */1] | 0;
               })), (function (a, b) {

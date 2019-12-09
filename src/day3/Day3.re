@@ -130,7 +130,6 @@ let (coord_map, collisions) =
       };
     },
   );
-Belt.List.forEach(collisions, coord => {Js.log2("collision at: ", (coord.x, coord.y))});
 let closest_collision =
   Belt.List.map(collisions, collision_coord => {collision_coord.x + collision_coord.y})
   ->Belt.List.sort((a, b) => a - b)
