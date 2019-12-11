@@ -15,6 +15,7 @@ type coord = {
 type line_id = int;
 type touches = list((line_id, coord));
 exception UnknownDirectionInput;
+exception CollisionFilterFailed;
 
 let tag_coords_with_line_id = (coords: list(coord), line_id: line_id) => {
   coords->Belt.List.map(coord => (coord, line_id));
@@ -113,11 +114,20 @@ module CoordMap =
     let compare = compare;
   });
 
-/* The following test data has collision with manhattan distance 6 */
-let line1_input = "R8,U5,L5,D3";
-let line2_input = "U7,R6,D4,L4";
-/* let line1_input = Input3.line1_str; */
-/* let line2_input = Input3.line2_str; */
+/* The following test data has collision with manhattan distance 6 and step distance 15*/
+/* let line1_input = "R8,U5,L5,D3"; */
+/* let line2_input = "U7,R6,D4,L4"; */
+
+/* R75,D30,R83,U83,L12,D49,R71,U7,L72 */
+/* U62,R66,U55,R34,D71,R55,D58,R83 = distance 159 */
+/* let line1_input = "R75,D30,R83,U83,L12,D49,R71,U7,L72"; */
+/* let line2_input = "U62,R66,U55,R34,D71,R55,D58,R83"; */
+
+/* R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51 */
+/* U98,R91,D20,R16,D67,R40,U7,R15,U6,R7 = distance 135 */
+
+let line1_input = Input3.line1_str;
+let line2_input = Input3.line2_str;
 let line1_tagged_coords =
   map_input_to_moves_list(line1_input)->map_move_list_to_coords->tag_coords_with_line_id(1);
 let line2_tagged_coords =
@@ -127,52 +137,79 @@ let all_tagged_coords = Belt.List.concat(line1_tagged_coords, line2_tagged_coord
 let does_collide = (querying_line_id: line_id, touches: touches) => {
   Belt.List.some(touches, ((line_id, _)) => line_id != querying_line_id);
 };
-let (coord_map: CoordMap.t(touches), collision_touches) =
+let coord_map: CoordMap.t(touches) =
   /* a "touch" is any time a line visit a coordinate */
-  Belt.List.reduce(
-    all_tagged_coords,
-    (CoordMap.empty, []: list(touches)),
-    (acc, (coord, line_id)) => {
-      let (coord_map, collision_touches) = acc;
-      switch (CoordMap.find((coord.x, coord.y), coord_map)) {
+  Belt.List.reduce(all_tagged_coords, CoordMap.empty, (coord_map, (coord, line_id)) => {
+    switch (CoordMap.find((coord.x, coord.y), coord_map)) {
+    | exception Not_found => CoordMap.add((coord.x, coord.y), [(line_id, coord)], coord_map)
+    | touches =>
+      // Find out if there is a touch associated with this line_id
+
+      switch (List.assoc(line_id, touches)) {
       | exception Not_found =>
-        let new_map = CoordMap.add((coord.x, coord.y), [(line_id, coord)], coord_map);
-        (new_map, collision_touches);
-      | touches when does_collide(line_id, touches) =>
-        let new_map =
-          CoordMap.add((coord.x, coord.y), [(line_id, coord), ...touches], coord_map);
-        (new_map, [[(line_id, coord), ...touches], ...collision_touches]);
-      | touches =>
-        let new_map =
-          CoordMap.add((coord.x, coord.y), [(line_id, coord), ...touches], coord_map);
-        (new_map, collision_touches);
-      };
-    },
-  );
-let closest_collision_by_manhattan_distance = {
-  Belt.List.map(collision_touches, touch => {Belt.List.reduce(touch)});
-  Belt.List.map(collision_touches, collision => {collision.x + collision.coord.y})
-  ->Belt.List.sort((a, b) => a - b)
-  ->Belt.List.head;
-};
+        CoordMap.add((coord.x, coord.y), [(line_id, coord), ...touches], coord_map)
+      | previous_touch_coord =>
+        if (previous_touch_coord.steps < coord.steps) {
+          coord_map;
+        } else {
+          CoordMap.add(
+            (coord.x, coord.y),
+            [(line_id, coord), ...List.remove_assoc(line_id, touches)],
+            coord_map,
+          );
+        }
+      }
+    // and then only store the new one if its steps value is lower
+    }
+  });
+
+let collisions_coord_map =
+  CoordMap.filter((_, touches) => List.length(touches) == 2, coord_map);
+
+let collision_manhattan_distances_sorted =
+  CoordMap.fold(
+    (key, _, acc) => {[abs(fst(key)) + abs(snd(key)), ...acc]},
+    collisions_coord_map,
+    [],
+  )
+  |> List.sort((a, b) => a - b);
 let collision_output_manhattan_distance =
-  switch (closest_collision_by_manhattan_distance) {
-  | Some(collision) => "Closest collision has manhattan distance: " ++ string_of_int(collision)
-  | None => "No collisions"
+  switch (List.hd(collision_manhattan_distances_sorted)) {
+  | collision => "Closest collision has manhattan distance: " ++ string_of_int(collision)
+  | exception (Failure("hd")) => "No collisions"
   };
 
-let closest_collision_by_steps =
-  Belt.List.sort(collisions, (a, b) => compare(a.steps, b.steps))->Belt.List.head;
+let collision_steps_sorted =
+  CoordMap.fold(
+    (_, touches, acc) => {
+      switch (touches) {
+      | [(_: line_id, c1: coord), (_, c2)] => [c1.steps + c2.steps, ...acc]
+      | _ => raise(CollisionFilterFailed)
+      }
+    },
+    collisions_coord_map,
+    [],
+  )
+  |> List.sort(compare);
+
 let collision_output_steps =
-  switch (closest_collision_by_steps) {
-  | Some(collision) => "Closest collision by number of steps: " ++ string_of_int(collision.steps)
-  | None => "No collisions"
+  switch (List.hd(collision_steps_sorted)) {
+  | collision => "Closest collision by number of steps: " ++ string_of_int(collision)
+  | exception (Failure("hd")) => "No collisions"
   };
+
+/* let closest_collision_by_steps = */
+/*   Belt.List.sort(collisions, (a, b) => compare(a.steps, b.steps))->Belt.List.head; */
+/* let collision_output_steps = */
+/*   switch (closest_collision_by_steps) { */
+/*   | Some(collision) => "Closest collision by number of steps: " ++ string_of_int(collision.steps) */
+/*   | None => "No collisions" */
+/*   }; */
 
 [@react.component]
 let make = () => {
   <div>
-    <div> collision_output_steps->ReasonReact.string </div>
     <div> collision_output_manhattan_distance->ReasonReact.string </div>
+    <div> collision_output_steps->ReasonReact.string </div>
   </div>;
 };
