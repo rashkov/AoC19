@@ -2,7 +2,7 @@
 
 var React = require("react");
 var Belt_List = require("bs-platform/lib/js/belt_List.js");
-var Input1$ReasonReactExamples = require("./input1.bs.js");
+var Input1$ReasonReactExamples = require("./Input1.bs.js");
 
 function calc_fuel_for_mass(mass) {
   return (mass / 3 | 0) - 2 | 0;
